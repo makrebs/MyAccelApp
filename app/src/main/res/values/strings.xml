@@ -2,4 +2,9 @@
     <string name="app_name">My Accel App</string>
     <string name="edit_message">Enter a message</string>
     <string name="button_send">Send</string>
+    <string name="title_activity_sensor">sensorActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="button_start_sensor">Check sensor</string>
+    <string name="edit_sensor_type">Sensor value:</string>
 </resources>

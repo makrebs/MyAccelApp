@@ -23,4 +23,10 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(EXTRA_MESSAGE, message);
         startActivity(intent);
     }
+
+    /** Called when the user taps the Check sensor button */
+    public void showSensor(View view) {
+        Intent intent = new Intent(this, SensorActivity.class);
+        startActivity(intent);
+    }
 }
