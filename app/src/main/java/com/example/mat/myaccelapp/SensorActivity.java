@@ -1,5 +1,10 @@
 package com.example.mat.myaccelapp;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -18,7 +23,9 @@ import android.view.ViewGroup;
 
 import android.widget.TextView;
 
-public class SensorActivity extends AppCompatActivity {
+public class SensorActivity extends AppCompatActivity implements SensorEventListener {
+    private SensorManager mSensorManager;
+    private Sensor mAccel;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -60,7 +67,12 @@ public class SensorActivity extends AppCompatActivity {
             }
         });
 
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
     }
+
+
 
 
     @Override
@@ -83,6 +95,31 @@ public class SensorActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public final void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Do something here if sensor accuracy changes.
+    }
+
+    @Override
+    public final void onSensorChanged(SensorEvent event) {
+        // The light sensor returns a single value.
+        // Many sensors return 3 values, one for each axis.
+        float accelX = event.values[0];
+        // Do something with this sensor value.
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mSensorManager.registerListener(this, mAccel, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
     }
 
     /**

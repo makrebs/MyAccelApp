@@ -6,5 +6,6 @@
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="button_start_sensor">Check sensor</string>
-    <string name="edit_sensor_type">Sensor value:</string>
+    <string name="text_acceleration">Acceleration:</string>
+    <string name="text_linear_acceleration">Lin. Acceleration:</string>
 </resources>
