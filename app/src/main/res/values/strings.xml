@@ -6,6 +6,11 @@
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="button_start_sensor">Check sensor</string>
-    <string name="text_acceleration">Acceleration:</string>
-    <string name="text_acceleration_world">Acceleration (World):</string>
+    <string name="text_acceleration">Acc [m/s2] (Device):</string>
+    <string name="text_acceleration_world">Acc [m/s2] (World):</string>
+    <string name="text_velocity_world">Velocity [m/s] (World):</string>
+    <string name="text_position_world">Position [m] (World):</string>
+    <string name="text_update_rate">Update rate [s]:</string>
+    <string name="text_not_available">n/a</string>
+    <string name="text_calibration">Calib.:</string>
 </resources>

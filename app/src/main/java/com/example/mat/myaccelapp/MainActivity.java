@@ -11,7 +11,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -20,8 +24,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private final float[] mMagnetometerReading = new float[4];
     private final float[] mAccelerometerWorld = new float[4];
 
+    private float mAccelerometerTimestampPrevious = 0;
+    private final float[] mVelocityWorld = new float[4];
+    private final float[] mPositionWorld = new float[4];
+
     private final float[] mRotationMatrix = new float[16];
     private final float[] mOrientationAngles = new float[3];
+
+    private int mCalibrationCounter = 0;
+    private float mGravityCalibrationValue = SensorManager.STANDARD_GRAVITY;
+    private boolean mIsCalibrated = FALSE;
+    public static final int CALIBRATION_COUNT = 20;
 
     public static final String EXTRA_MESSAGE = "com.example.mat.myaccelapp.MESSAGE";
     @Override
@@ -57,38 +70,92 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, mAccelerometerReading,
                     0, 3);
+            float deltaTime = (event.timestamp - mAccelerometerTimestampPrevious) / 1000000000.0f;  // seconds
+            mAccelerometerTimestampPrevious = event.timestamp;
+            updateOrientationAngles();
+            onAccelerometerUpdate(deltaTime);
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, mMagnetometerReading,
                     0, 3);
+            // Transform acceleration values from device coordinates to world coordinates
+            updateOrientationAngles();
         }
 
-        updateOrientationAngles();
+    }
 
-        float[] rot = new float[16];
+    // Called when accelerometer reading is updated.
+    // Transform to world coordinates and sum up for velocity and position
+    public void onAccelerometerUpdate(float deltaTime) {
+
+        // v_W = R^{-1} * v_B (therefore we need to calc the inverse first)
         float[] inv = new float[16];
-
-        System.arraycopy(mRotationMatrix, 0, rot, 0, mRotationMatrix.length);
-
         android.opengl.Matrix.invertM(inv, 0, mRotationMatrix, 0);
         android.opengl.Matrix.multiplyMV(mAccelerometerWorld, 0, inv, 0, mAccelerometerReading, 0);
 
-        // Do something with this sensor value.
-        TextView textView = findViewById(R.id.textViewAccel);
+        // Remove gravity offset (do calibration at startup)
+        if (mIsCalibrated == FALSE) {
+            if (mCalibrationCounter < CALIBRATION_COUNT) {
+                if (mCalibrationCounter == 0) {
+                    mGravityCalibrationValue = mAccelerometerWorld[2];
+                } else {
+                    mGravityCalibrationValue += (mAccelerometerWorld[2] - mGravityCalibrationValue) * 0.2;
+                }
+                Log.d("Gravity:", String.format("Calibration value (%d): %.6f", mCalibrationCounter, mGravityCalibrationValue));
+                ProgressBar progressBar = findViewById(R.id.progressBarCalibration);
+                if (progressBar != null) {
+                    progressBar.setProgress((100 * mCalibrationCounter) / (CALIBRATION_COUNT-1));
+                }
+                mCalibrationCounter++;
+            } else {
+                mIsCalibrated = TRUE;
+            }
+        }
+
+
+        // Display text
+        TextView textView;
+        textView = findViewById(R.id.textViewAccel);
         if (textView != null) {
             textView.setText(String.format("%.2f, %.2f, %.2f", mAccelerometerReading[0], mAccelerometerReading[1], mAccelerometerReading[2]));
         }
 
-        // Do something with this sensor value.
-        TextView textView2 = findViewById(R.id.textViewAccelWorld);
-        if (textView2 != null) {
-            textView2.setText(String.format("%.2f, %.2f, %.2f", mAccelerometerWorld[0], mAccelerometerWorld[1], mAccelerometerWorld[2]));
+        textView = findViewById(R.id.textViewUpdateRate);
+        if (textView != null) {
+            textView.setText(String.format("%.3f", deltaTime));
         }
 
+        if (mIsCalibrated == TRUE) {
+            mAccelerometerWorld[2] -= mGravityCalibrationValue;
+            for (int i = 0; i < 3; i++) {
+                mVelocityWorld[i] += deltaTime * mAccelerometerWorld[i];
+                mPositionWorld[i] += deltaTime * mVelocityWorld[i];
+            }
+
+
+            textView = findViewById(R.id.textViewAccelWorld);
+            if (textView != null) {
+                textView.setText(String.format("%.2f, %.2f, %.2f", mAccelerometerWorld[0], mAccelerometerWorld[1], mAccelerometerWorld[2]));
+            }
+
+            textView = findViewById(R.id.textViewVelocity);
+            if (textView != null) {
+                textView.setText(String.format("%.2f, %.2f, %.2f", mVelocityWorld[0], mVelocityWorld[1], mVelocityWorld[2]));
+            }
+
+            textView = findViewById(R.id.textViewPosition);
+            if (textView != null) {
+                textView.setText(String.format("%.2f, %.2f, %.2f", mPositionWorld[0], mPositionWorld[1], mPositionWorld[2]));
+            }
+
+        }
 
         //Log.d("Raw Magnetic Field","Values: (" + mMagnetometerReading[0] + ", " + mMagnetometerReading[1] + ", " + mMagnetometerReading[2] + ")");
         //Log.d("Raw Acceleration::","Values: (" + mAccelerometerReading[0] + ", " + mAccelerometerReading[1] + ", " + mAccelerometerReading[2] + ")");
         //Log.d("Earth Acceleration","Values: (" + mAccelerometerWorld[0] + ", " + mAccelerometerWorld[1] + ", " + mAccelerometerWorld[2] + ")");
         //Log.d("R:", String.format("Values:%.2f, %.2f, %.2f, %.2f; %.2f, %.2f, %.2f, %.2f; %.2f, %.2f, %.2f, %.2f; %.2f, %.2f, %.2f, %.2f;", rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8], rot[9], rot[10], rot[11], rot[12], rot[13], rot[14], rot[15]));
+
+        //Log.d("Velocity", String.format("%.2f, %.2f, %.2f", mVelocityWorld[0], mVelocityWorld[1], mVelocityWorld[2]));
+        //Log.d("Position", String.format("%.2f, %.2f, %.2f", mPositionWorld[0], mPositionWorld[1], mPositionWorld[2]));
 
 
     }
@@ -121,12 +188,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Sensor accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         if (accelerometer != null) {
             mSensorManager.registerListener(this, accelerometer,
-                    SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_UI);
+                    SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_FASTEST);
         }
         Sensor magneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         if (magneticField != null) {
             mSensorManager.registerListener(this, magneticField,
-                    SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_UI);
+                    SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_FASTEST);
         }
     }
 
