@@ -13,4 +13,5 @@
     <string name="text_update_rate">Update rate [s]:</string>
     <string name="text_not_available">n/a</string>
     <string name="text_calibration">Calib.:</string>
+    <string name="text_calibration_button">Calib</string>
 </resources>

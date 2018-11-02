@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int mCalibrationCounter = 0;
     private float mGravityCalibrationValue = SensorManager.STANDARD_GRAVITY;
     private boolean mIsCalibrated = FALSE;
-    public static final int CALIBRATION_COUNT = 20;
+    public static final int CALIBRATION_COUNT = 50;
 
     public static final String EXTRA_MESSAGE = "com.example.mat.myaccelapp.MESSAGE";
     @Override
@@ -201,5 +201,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onPause() {
         super.onPause();
         mSensorManager.unregisterListener(this);
+    }
+
+    /** Called when the user taps the Send button */
+    public void resetCalibration(View view) {
+        mIsCalibrated = FALSE;
+        mCalibrationCounter = 0;
+
+        for (int i = 0; i < 3; i++) {
+            mVelocityWorld[i] = 0.0f;
+            mPositionWorld[i] = 0.0f;
+        }
     }
 }
