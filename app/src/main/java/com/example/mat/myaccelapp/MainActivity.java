@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float mGravityCalibrationValue = SensorManager.STANDARD_GRAVITY;
     private boolean mIsCalibrated = FALSE;
     public static final int CALIBRATION_COUNT = 50;
+    public static final float CALIBRATION_ACCELEROMETER_FILTER_WEIGHT = 0.2f;
+    public static final float CALIBRATION_ACCELEROMETER_HYSTERESIS = 0.1f;
 
     public static final String EXTRA_MESSAGE = "com.example.mat.myaccelapp.MESSAGE";
     @Override
@@ -98,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (mCalibrationCounter == 0) {
                     mGravityCalibrationValue = mAccelerometerWorld[2];
                 } else {
-                    mGravityCalibrationValue += (mAccelerometerWorld[2] - mGravityCalibrationValue) * 0.2;
+                    mGravityCalibrationValue += (mAccelerometerWorld[2] - mGravityCalibrationValue) * CALIBRATION_ACCELEROMETER_FILTER_WEIGHT;
                 }
                 Log.d("Gravity:", String.format("Calibration value (%d): %.6f", mCalibrationCounter, mGravityCalibrationValue));
                 ProgressBar progressBar = findViewById(R.id.progressBarCalibration);
@@ -109,8 +111,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             } else {
                 mIsCalibrated = TRUE;
             }
+        } else {
+            // Online calibration: Update calibration when not moving (Hysteresis)
+            if (Math.abs(mAccelerometerWorld[2] - mGravityCalibrationValue) < CALIBRATION_ACCELEROMETER_HYSTERESIS) {
+                mGravityCalibrationValue += (mAccelerometerWorld[2] - mGravityCalibrationValue) * CALIBRATION_ACCELEROMETER_FILTER_WEIGHT;
+            }
         }
-
 
         // Display text
         TextView textView;
