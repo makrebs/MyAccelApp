@@ -34,9 +34,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int mCalibrationCounter = 0;
     private float mGravityCalibrationValue = SensorManager.STANDARD_GRAVITY;
     private boolean mIsCalibrated = FALSE;
-    public static final int CALIBRATION_COUNT = 50;
-    public static final float CALIBRATION_ACCELEROMETER_FILTER_WEIGHT = 0.2f;
-    public static final float CALIBRATION_ACCELEROMETER_HYSTERESIS = 0.1f;
+    private static final int CALIBRATION_COUNT = 50;
+    private static final float CALIBRATION_ACCELEROMETER_FILTER_WEIGHT = 0.2f;
+    private static final float ACCELERATION_HYSTERESIS = 0.1f;
+    private static final float VELOCITY_HYSTERESIS = 0.2f;
 
     public static final String EXTRA_MESSAGE = "com.example.mat.myaccelapp.MESSAGE";
     @Override
@@ -113,9 +114,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         } else {
             // Online calibration: Update calibration when not moving (Hysteresis)
-            if (Math.abs(mAccelerometerWorld[2] - mGravityCalibrationValue) < CALIBRATION_ACCELEROMETER_HYSTERESIS) {
+            if (Math.abs(mAccelerometerWorld[2] - mGravityCalibrationValue) < ACCELERATION_HYSTERESIS) {
                 mGravityCalibrationValue += (mAccelerometerWorld[2] - mGravityCalibrationValue) * CALIBRATION_ACCELEROMETER_FILTER_WEIGHT;
+
+                // Apply hysteresis to velocity only if not accelerating
+                if (Math.abs(mVelocityWorld[2]) < VELOCITY_HYSTERESIS) {
+                    mVelocityWorld[2] = 0.0f;
+                }
             }
+
+
         }
 
         // Display text
@@ -131,16 +139,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         if (mIsCalibrated == TRUE) {
-            mAccelerometerWorld[2] -= mGravityCalibrationValue;
+            // Calculate velocity
             for (int i = 0; i < 3; i++) {
                 mVelocityWorld[i] += deltaTime * mAccelerometerWorld[i];
+            }
+            mVelocityWorld[2] -= deltaTime * mGravityCalibrationValue;
+
+            // Calculate position
+            for (int i = 0; i < 3; i++) {
                 mPositionWorld[i] += deltaTime * mVelocityWorld[i];
             }
 
-
+            // Display values
             textView = findViewById(R.id.textViewAccelWorld);
             if (textView != null) {
-                textView.setText(String.format("%.2f, %.2f, %.2f", mAccelerometerWorld[0], mAccelerometerWorld[1], mAccelerometerWorld[2]));
+                textView.setText(String.format("%.2f, %.2f, %.2f", mAccelerometerWorld[0], mAccelerometerWorld[1], mAccelerometerWorld[2] - mGravityCalibrationValue));
             }
 
             textView = findViewById(R.id.textViewVelocity);
